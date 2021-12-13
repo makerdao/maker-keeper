@@ -1,4 +1,5 @@
 # autoline-keeper
+![Build Status](https://github.com/makerdao/autoline-keeper/actions/workflows/.github/workflows/publish.yaml/badge.svg?branch=main)
 
 This repository contains a Keeper that on each block mined checks if there's any debt ceiling change opportunity and executes the transaction to update.
 Checking opportunities of debt ceiling change is done by calling the `getNextJob` function of `AutoLineJob` contract (https://etherscan.io/address/0xd3E01B079f0a787Fc2143a43E2Bdd799b2f34d9a).
