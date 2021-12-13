@@ -21,7 +21,7 @@ from web3 import Web3, HTTPProvider
 from pymaker.keys import register_private_key
 from pymaker.lifecycle import Lifecycle
 from pymaker.gas import GeometricGasPrice
-from pymaker import Contract, Address, Transact, Calldata
+from pymaker import Contract, Address, Transact
 
 
 class AutolineKeeper:
@@ -74,6 +74,8 @@ class AutolineKeeper:
         self.autoline = AutoLine(self.web3, Address(self.arguments.autoline_address))
         self.autoline_job = AutoLineJob(self.web3, Address(self.arguments.autoline_job_address))
 
+        self.network_id = self.arguments.network_id
+
     def main(self):
         """ Initialize the lifecycle and enter into the Keeper Lifecycle controller.
         Each function supplied by the lifecycle will accept a callback function that will be executed.
@@ -93,7 +95,7 @@ class AutolineKeeper:
             logging.error("Number of errors reached max configured, exiting keeper")
             self.lifecycle.terminate()
         else:
-            success, address, calldata = self.autoline_job.getNextJob(self.arguments.network_id)
+            success, address, calldata = self.autoline_job.getNextJob(self.network_id)
             logging.info(f"Success: {success} | Address: {address} | Calldata: {calldata}")
             self.execute(success, address, calldata)
 
