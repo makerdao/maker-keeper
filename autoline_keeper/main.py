@@ -96,7 +96,7 @@ class AutolineKeeper:
                 self.execute(success, address, calldata)
 
     def execute(self, success: bool, address: str, calldata: str):
-        if success and self.autoline.address.address.lower() == address.lower():
+        if success:
             gas_strategy = GeometricGasPrice(
                 web3=self.web3,
                 initial_price=None,
