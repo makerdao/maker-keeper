@@ -1,0 +1,31 @@
+{
+  "abi": [
+    {
+      "type": "function",
+      "name": "workable",
+      "inputs": [
+        {
+          "internalType": "bytes32",
+          "name": "network",
+          "type": "bytes32"
+        }
+      ],
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "canWork",
+          "type": "bool"
+        },
+        {
+          "internalType": "bytes",
+          "name": "args",
+          "type": "bytes"
+        }
+      ],
+      "constant": null,
+      "stateMutability": "nonpayable"
+    }
+  ],
+  "bin": "0x",
+  "bin-runtime": "0x"
+}

@@ -44,13 +44,9 @@ class AutolineKeeper:
         parser.add_argument("--eth-private-key", type=str, required=True,
                             help="Ethereum private key(s) to use")
 
-        parser.add_argument("--autoline-address", type=str,
-                            default="0xC7Bdd1F2B16447dcf3dE045C4a039A60EC2f0ba3",
-                            help="Address of AutoLine contract")
-
-        parser.add_argument("--autoline-job-address", type=str,
-                            default="0xd3E01B079f0a787Fc2143a43E2Bdd799b2f34d9a",
-                            help="Address of AutoLineJob contract")
+        parser.add_argument("--sequencer-address", type=str,
+                            default="0x9566eB72e47E3E20643C0b1dfbEe04Da5c7E4732",
+                            help="Address of Sequencer contract")
 
         parser.add_argument("--max-errors", type=int, default=100,
                             help="Maximum number of allowed errors before the keeper terminates (default: 100)")
@@ -71,8 +67,7 @@ class AutolineKeeper:
         self.max_errors = self.arguments.max_errors
         self.errors = 0
 
-        self.autoline = AutoLine(self.web3, Address(self.arguments.autoline_address))
-        self.autoline_job = AutoLineJob(self.web3, Address(self.arguments.autoline_job_address))
+        self.autoline_job = AutoLineJob(self.web3, Address(self.arguments.sequencer_address))
 
         self.network_id = self.arguments.network_id
 
@@ -95,9 +90,10 @@ class AutolineKeeper:
             logging.error("Number of errors reached max configured, exiting keeper")
             self.lifecycle.terminate()
         else:
-            success, address, calldata = self.autoline_job.getNextJob(self.network_id)
-            logging.info(f"Success: {success} | Address: {address} | Calldata: {calldata}")
-            self.execute(success, address, calldata)
+            results = self.autoline_job.getNextJobs(self.network_id)
+            for address, success, calldata in results:
+                logging.info(f"Success: {success} | Address: {address} | Calldata: {calldata}")
+                self.execute(success, address, calldata)
 
     def execute(self, success: bool, address: str, calldata: str):
         if success and self.autoline.address.address.lower() == address.lower():
@@ -108,7 +104,8 @@ class AutolineKeeper:
                 every_secs=180
             )
             try:
-                receipt = self.autoline.get_transact(calldata).transact(gas_strategy=gas_strategy)
+                job = AutoLine(self.web3, Address(address))
+                receipt = job.get_transact(calldata).transact(gas_strategy=gas_strategy)
                 if receipt is not None and receipt.successful:
                     logging.info("Exec on Autoline done!")
                 else:
@@ -151,7 +148,7 @@ class AutoLineJob(Contract):
         address: Ethereum address of the `AutolineJob` contract.
     """
 
-    abi = Contract._load_abi(__name__, 'abi/AutoLineJob.abi')
+    abi = Contract._load_abi(__name__, 'abi/Sequencer.abi')
 
     def __init__(self, web3: Web3, address: Address):
         assert (isinstance(web3, Web3))
@@ -161,8 +158,8 @@ class AutoLineJob(Contract):
         self.address = address
         self._contract = self._get_contract(web3, self.abi, address)
 
-    def getNextJob(self, network_id: str):
-        return self._contract.functions.getNextJob(network_id).call()
+    def getNextJobs(self, network_id: str):
+        return self._contract.functions.getNextJobs(network_id).call()
 
     def __repr__(self):
         return f"AutoLineJob('{self.address}')"
@@ -176,7 +173,7 @@ class AutoLine(Contract):
         address: Ethereum address of the `AutoLine` contract.
     """
 
-    abi = Contract._load_abi(__name__, 'abi/AutoLine.abi')
+    abi = Contract._load_abi(__name__, 'abi/IJob.abi')
 
     def __init__(self, web3: Web3, address: Address):
         assert (isinstance(web3, Web3))
@@ -187,8 +184,7 @@ class AutoLine(Contract):
         self._contract = self._get_contract(web3, self.abi, address)
 
     def get_transact(self, calldata: str) -> Transact:
-        function, params = self._contract.decode_function_input(calldata)
-        return Transact(self, self.web3, self.abi, self.address, self._contract, function.fn_name, list(params.values()))
+        return Transact(self, self.web3, self.abi, self.address, self._contract, "work(bytes32,bytes)", calldata)
 
     def __repr__(self):
         return f"AutoLine('{self.address}')"
