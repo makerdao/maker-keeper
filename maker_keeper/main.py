@@ -67,7 +67,7 @@ class MakerKeeper:
         self.max_errors = self.arguments.max_errors
         self.errors = 0
 
-        self.autoline_job = Sequencer(self.web3, Address(self.arguments.sequencer_address))
+        self.sequencer = Sequencer(self.web3, Address(self.arguments.sequencer_address))
 
         self.network_id = self.arguments.network_id
 
@@ -90,7 +90,7 @@ class MakerKeeper:
             logging.error("Number of errors reached max configured, exiting keeper")
             self.lifecycle.terminate()
         else:
-            results = self.autoline_job.getNextJobs(self.network_id)
+            results = self.sequencer.getNextJobs(self.network_id)
             for address, success, calldata in results:
                 logging.info(f"Success: {success} | Address: {address} | Calldata: {calldata}")
                 self.execute(success, address, calldata)
