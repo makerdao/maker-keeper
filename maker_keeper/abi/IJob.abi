@@ -1,5 +1,4 @@
-{
-  "abi": [
+[
     {
       "type": "function",
       "name": "workable",
@@ -25,7 +24,4 @@
       "constant": null,
       "stateMutability": "nonpayable"
     }
-  ],
-  "bin": "0x",
-  "bin-runtime": "0x"
-}
+]

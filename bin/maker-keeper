@@ -2,4 +2,4 @@
 dir="$(dirname "$0")"/..
 source $dir/_virtualenv/bin/activate || exit
 export PYTHONPATH=$PYTHONPATH:$dir:$dir/lib/pymaker
-exec python3 -m autoline_keeper.main $@
+exec python3 -m maker_keeper.main $@

@@ -24,13 +24,13 @@ from pymaker.gas import GeometricGasPrice
 from pymaker import Contract, Address, Transact
 
 
-class AutolineKeeper:
-    """AutolineKeeper."""
+class MakerKeeper:
+    """MakerKeeper."""
 
     logger = logging.getLogger()
 
     def __init__(self, args: list, **kwargs):
-        parser = argparse.ArgumentParser(prog='autoline-keeper')
+        parser = argparse.ArgumentParser(prog='maker-keeper')
 
         parser.add_argument("--rpc-url", type=str, required=True,
                             help="JSON-RPC host URL")
@@ -67,7 +67,7 @@ class AutolineKeeper:
         self.max_errors = self.arguments.max_errors
         self.errors = 0
 
-        self.autoline_job = AutoLineJob(self.web3, Address(self.arguments.sequencer_address))
+        self.autoline_job = Sequencer(self.web3, Address(self.arguments.sequencer_address))
 
         self.network_id = self.arguments.network_id
 
@@ -104,16 +104,16 @@ class AutolineKeeper:
                 every_secs=180
             )
             try:
-                job = AutoLine(self.web3, Address(address))
+                job = IJob(self.web3, Address(address))
                 receipt = job.get_transact(calldata).transact(gas_strategy=gas_strategy)
                 if receipt is not None and receipt.successful:
-                    logging.info("Exec on Autoline done!")
+                    logging.info("Exec on IJob done!")
                 else:
-                    logging.error("Failed to run exec on Autoline!")
+                    logging.error("Failed to run exec on IJob!")
 
             except Exception as e:
                 logging.error(str(e))
-                logging.error("Failed to run exec on Autoline!")
+                logging.error("Failed to run exec on IJob!")
 
         else:
             logging.info("No update available")
@@ -140,12 +140,12 @@ class AutolineKeeper:
         return int(1.5 * GeometricGasPrice.GWEI)
 
 
-class AutoLineJob(Contract):
-    """A client for the `AutolineJob` contract.
+class Sequencer(Contract):
+    """A client for the `Sequencer` contract.
 
     Attributes:
         web3: An instance of `Web` from `web3.py`.
-        address: Ethereum address of the `AutolineJob` contract.
+        address: Ethereum address of the `Sequencer` contract.
     """
 
     abi = Contract._load_abi(__name__, 'abi/Sequencer.abi')
@@ -162,15 +162,15 @@ class AutoLineJob(Contract):
         return self._contract.functions.getNextJobs(network_id).call()
 
     def __repr__(self):
-        return f"AutoLineJob('{self.address}')"
+        return f"Sequencer('{self.address}')"
 
 
-class AutoLine(Contract):
-    """A client for the `AutoLine` contract.
+class IJob(Contract):
+    """A client for the `IJobInterface` contract.
 
     Attributes:
         web3: An instance of `Web` from `web3.py`.
-        address: Ethereum address of the `AutoLine` contract.
+        address: Ethereum address of the `IJobInterface` contract.
     """
 
     abi = Contract._load_abi(__name__, 'abi/IJob.abi')
@@ -187,9 +187,9 @@ class AutoLine(Contract):
         return Transact(self, self.web3, self.abi, self.address, self._contract, "work(bytes32,bytes)", calldata)
 
     def __repr__(self):
-        return f"AutoLine('{self.address}')"
+        return f"IJobInterface('{self.address}')"
 
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)-15s %(levelname)-8s %(message)s', level=logging.INFO)
-    AutolineKeeper(sys.argv[1:]).main()
+    MakerKeeper(sys.argv[1:]).main()
