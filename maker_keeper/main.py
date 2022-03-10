@@ -105,7 +105,7 @@ class MakerKeeper:
             )
             try:
                 job = IJob(self.web3, Address(address))
-                receipt = job.get_transact(calldata).transact(gas_strategy=gas_strategy)
+                receipt = job.work(self.network_id, calldata).transact(gas_strategy=gas_strategy) 
                 if receipt is not None and receipt.successful:
                     logging.info("Exec on IJob done!")
                 else:
@@ -183,8 +183,8 @@ class IJob(Contract):
         self.address = address
         self._contract = self._get_contract(web3, self.abi, address)
 
-    def get_transact(self, calldata: str) -> Transact:
-        return Transact(self, self.web3, self.abi, self.address, self._contract, "work(bytes32,bytes)", calldata)
+    def work(self, network: str, calldata: str) -> Transact:
+        return Transact(self, self.web3, self.abi, self.address, self._contract, "work(bytes32,bytes)", [network, calldata])
 
     def __repr__(self):
         return f"IJobInterface('{self.address}')"
