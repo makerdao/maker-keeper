@@ -187,9 +187,10 @@ class IJob(Contract):
         return Transact(self, self.web3, self.abi, self.address, self._contract, "work(bytes32,bytes)", [network, calldata])
 
     def __repr__(self):
-        return f"IJobInterface('{self.address}')"
+        return f"IJob('{self.address}')"
 
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)-15s %(levelname)-8s %(message)s', level=logging.INFO)
+    logging.Formatter.converter = time.gmtime
     MakerKeeper(sys.argv[1:]).main()
