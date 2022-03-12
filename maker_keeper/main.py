@@ -24,13 +24,13 @@ from pymaker.gas import GeometricGasPrice
 from pymaker import Contract, Address, Transact
 
 
-class AutolineKeeper:
-    """AutolineKeeper."""
+class MakerKeeper:
+    """MakerKeeper."""
 
     logger = logging.getLogger()
 
     def __init__(self, args: list, **kwargs):
-        parser = argparse.ArgumentParser(prog='autoline-keeper')
+        parser = argparse.ArgumentParser(prog='maker-keeper')
 
         parser.add_argument("--rpc-url", type=str, required=True,
                             help="JSON-RPC host URL")
@@ -44,13 +44,9 @@ class AutolineKeeper:
         parser.add_argument("--eth-private-key", type=str, required=True,
                             help="Ethereum private key(s) to use")
 
-        parser.add_argument("--autoline-address", type=str,
-                            default="0xC7Bdd1F2B16447dcf3dE045C4a039A60EC2f0ba3",
-                            help="Address of AutoLine contract")
-
-        parser.add_argument("--autoline-job-address", type=str,
-                            default="0xd3E01B079f0a787Fc2143a43E2Bdd799b2f34d9a",
-                            help="Address of AutoLineJob contract")
+        parser.add_argument("--sequencer-address", type=str,
+                            default="0x9566eB72e47E3E20643C0b1dfbEe04Da5c7E4732",
+                            help="Address of Sequencer contract")
 
         parser.add_argument("--max-errors", type=int, default=100,
                             help="Maximum number of allowed errors before the keeper terminates (default: 100)")
@@ -71,8 +67,7 @@ class AutolineKeeper:
         self.max_errors = self.arguments.max_errors
         self.errors = 0
 
-        self.autoline = AutoLine(self.web3, Address(self.arguments.autoline_address))
-        self.autoline_job = AutoLineJob(self.web3, Address(self.arguments.autoline_job_address))
+        self.sequencer = Sequencer(self.web3, Address(self.arguments.sequencer_address))
 
         self.network_id = self.arguments.network_id
 
@@ -95,12 +90,13 @@ class AutolineKeeper:
             logging.error("Number of errors reached max configured, exiting keeper")
             self.lifecycle.terminate()
         else:
-            success, address, calldata = self.autoline_job.getNextJob(self.network_id)
-            logging.info(f"Success: {success} | Address: {address} | Calldata: {calldata}")
-            self.execute(success, address, calldata)
+            results = self.sequencer.getNextJobs(self.network_id)
+            for address, success, calldata in results:
+                logging.info(f"Success: {success} | Address: {address} | Calldata: {calldata}")
+                self.execute(success, address, calldata)
 
     def execute(self, success: bool, address: str, calldata: str):
-        if success and self.autoline.address.address.lower() == address.lower():
+        if success:
             gas_strategy = GeometricGasPrice(
                 web3=self.web3,
                 initial_price=None,
@@ -108,15 +104,16 @@ class AutolineKeeper:
                 every_secs=180
             )
             try:
-                receipt = self.autoline.get_transact(calldata).transact(gas_strategy=gas_strategy)
+                job = IJob(self.web3, Address(address))
+                receipt = job.work(self.network_id, calldata).transact(gas_strategy=gas_strategy) 
                 if receipt is not None and receipt.successful:
-                    logging.info("Exec on Autoline done!")
+                    logging.info("Exec on IJob done!")
                 else:
-                    logging.error("Failed to run exec on Autoline!")
+                    logging.error("Failed to run exec on IJob!")
 
             except Exception as e:
                 logging.error(str(e))
-                logging.error("Failed to run exec on Autoline!")
+                logging.error("Failed to run exec on IJob!")
 
         else:
             logging.info("No update available")
@@ -143,15 +140,15 @@ class AutolineKeeper:
         return int(1.5 * GeometricGasPrice.GWEI)
 
 
-class AutoLineJob(Contract):
-    """A client for the `AutolineJob` contract.
+class Sequencer(Contract):
+    """A client for the `Sequencer` contract.
 
     Attributes:
         web3: An instance of `Web` from `web3.py`.
-        address: Ethereum address of the `AutolineJob` contract.
+        address: Ethereum address of the `Sequencer` contract.
     """
 
-    abi = Contract._load_abi(__name__, 'abi/AutoLineJob.abi')
+    abi = Contract._load_abi(__name__, 'abi/Sequencer.abi')
 
     def __init__(self, web3: Web3, address: Address):
         assert (isinstance(web3, Web3))
@@ -161,22 +158,22 @@ class AutoLineJob(Contract):
         self.address = address
         self._contract = self._get_contract(web3, self.abi, address)
 
-    def getNextJob(self, network_id: str):
-        return self._contract.functions.getNextJob(network_id).call()
+    def getNextJobs(self, network_id: str):
+        return self._contract.functions.getNextJobs(network_id).call()
 
     def __repr__(self):
-        return f"AutoLineJob('{self.address}')"
+        return f"Sequencer('{self.address}')"
 
 
-class AutoLine(Contract):
-    """A client for the `AutoLine` contract.
+class IJob(Contract):
+    """A client for the `IJobInterface` contract.
 
     Attributes:
         web3: An instance of `Web` from `web3.py`.
-        address: Ethereum address of the `AutoLine` contract.
+        address: Ethereum address of the `IJobInterface` contract.
     """
 
-    abi = Contract._load_abi(__name__, 'abi/AutoLine.abi')
+    abi = Contract._load_abi(__name__, 'abi/IJob.abi')
 
     def __init__(self, web3: Web3, address: Address):
         assert (isinstance(web3, Web3))
@@ -186,14 +183,14 @@ class AutoLine(Contract):
         self.address = address
         self._contract = self._get_contract(web3, self.abi, address)
 
-    def get_transact(self, calldata: str) -> Transact:
-        function, params = self._contract.decode_function_input(calldata)
-        return Transact(self, self.web3, self.abi, self.address, self._contract, function.fn_name, list(params.values()))
+    def work(self, network: str, calldata: str) -> Transact:
+        return Transact(self, self.web3, self.abi, self.address, self._contract, "work(bytes32,bytes)", [network, calldata])
 
     def __repr__(self):
-        return f"AutoLine('{self.address}')"
+        return f"IJob('{self.address}')"
 
 
 if __name__ == '__main__':
     logging.basicConfig(format='%(asctime)-15s %(levelname)-8s %(message)s', level=logging.INFO)
-    AutolineKeeper(sys.argv[1:]).main()
+    logging.Formatter.converter = time.gmtime
+    MakerKeeper(sys.argv[1:]).main()
