@@ -33,5 +33,5 @@ jobs:
     - name: Build, tag, and push image to Dockerhub
       id: build-image
       run: |
-        docker build -t makerdao/autoline-keeper .
-        docker push makerdao/autoline-keeper
+        docker build -t makerdao/maker-keeper .
+        docker push makerdao/maker-keeper
