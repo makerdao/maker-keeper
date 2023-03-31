@@ -46,7 +46,7 @@ class MakerKeeper:
                             help="Ethereum private key(s) to use")
 
         parser.add_argument("--sequencer-address", type=str,
-                            default="0x9566eB72e47E3E20643C0b1dfbEe04Da5c7E4732",
+                            default="0x238b4E35dAed6100C6162fAE4510261f88996EC9",
                             help="Address of Sequencer contract")
 
         parser.add_argument("--max-errors", type=int, default=100,
