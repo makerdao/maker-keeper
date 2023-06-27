@@ -21,8 +21,12 @@ jobs:
       with:
         python-version: '3.6.7'
 
-    - name: submodules recursively
-      run: git submodule update --init --recursive
+    - name: submodules checkout branch
+      run: |
+        # git submodule update --init --recursive
+        pushd lib/pymaker
+        git checkout codecov-upgrade
+        popd
 
     - name: run tests
       run: |
