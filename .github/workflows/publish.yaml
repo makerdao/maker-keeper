@@ -28,9 +28,7 @@ jobs:
         git submodule init
         git submodule update
         pushd lib/pymaker
-        # git checkout codecov-upgrade
-        git fetch
-        git branch -a
+        git checkout codecov-upgrade
         popd
 
     - name: run tests
