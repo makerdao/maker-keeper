@@ -1,10 +1,14 @@
+name: Build, test and push Docker image
+
 on:
   push:
     branches:
       - main
       - TECH-1350-fix-the-following-repos
 
-name: Rebuild Docker image
+env:
+  SUBMODULE_PATH: lib/pymaker
+  SUBMODULE_BRANCH: codecov-upgrade
 
 jobs:
   deploy:
@@ -18,18 +22,18 @@ jobs:
         fetch-depth: 0
         submodules: recursive
 
+    - name: checkout submodules branch
+      run: |
+        git submodule update --init --recursive
+        pushd $SUBMODULE_PATH
+        git checkout $SUBMODULE_BRANCH
+        popd
+
     - uses: actions/setup-python@v4
       with:
         python-version: '3.6.7'
 
-    - name: submodules checkout branch
-      run: |
-        git submodule update --init --recursive
-        pushd lib/pymaker
-        git checkout codecov-upgrade
-        popd
-
-    - name: run tests
+    - name: check requirements
       run: |
         cat $(find lib -name requirements.txt)
         echo ""
