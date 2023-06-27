@@ -24,9 +24,7 @@ jobs:
 
     - name: submodules checkout branch
       run: |
-        # git submodule update --init --recursive
-        git submodule init
-        git submodule update
+        git submodule update --init --recursive
         pushd lib/pymaker
         git checkout codecov-upgrade
         popd
