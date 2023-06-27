@@ -26,8 +26,9 @@ jobs:
 
     - name: run tests
       run: |
-        find lib -name requirements.txt | sort
-        find lib -name requirements-dev.txt | sort
+        find lib -name requirements.txt | cat
+        echo ""
+        find lib -name requirements-dev.txt | cat
 
     # - name: run tests
     #   run: |
