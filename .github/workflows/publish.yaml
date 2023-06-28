@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - TECH-1350-fix-the-following-repos
 
 env:
   SUBMODULE_PATH: lib/pymaker
