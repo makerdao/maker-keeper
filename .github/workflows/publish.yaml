@@ -73,4 +73,4 @@ jobs:
         docker build -t $REGISTRY/$REPO_NAME:$SHA_TAG \
                      -t $REGISTRY/$REPO_NAME:$LATEST_TAG \
                      .
-        # docker push $REGISTRY/$REPO_NAME --all-tags
+        docker push $REGISTRY/$REPO_NAME --all-tags
