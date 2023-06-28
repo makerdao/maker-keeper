@@ -9,6 +9,10 @@ on:
 env:
   SUBMODULE_PATH: lib/pymaker
   SUBMODULE_BRANCH: codecov-upgrade
+  SHA_TAG: ${{ steps.vars.outputs.sha_short }}
+  LATEST_TAG: latest
+  REGISTRY: makerdao
+  REPO_NAME: maker-keeper
 
 jobs:
   deploy:
@@ -22,7 +26,7 @@ jobs:
         fetch-depth: 0
         submodules: recursive
 
-    - name: checkout submodules branch
+    - name: Switch submodule branch
       run: |
         git submodule update --init --recursive
         pushd $SUBMODULE_PATH
@@ -39,7 +43,7 @@ jobs:
         echo ""
         cat $(find lib -name requirements-dev.txt)
 
-    - name: run tests
+    - name: Run tests
       run: |
         python -m pip install --upgrade pip
         pip install virtualenv --upgrade
@@ -47,14 +51,25 @@ jobs:
         pip install $(cat requirements-dev.txt $(find lib -name requirements-dev.txt | sort) | sort | uniq | sed 's/ *== */==/g')
         ./test.sh
 
-    # - name: Login to Docker Hub
-    #   uses: docker/login-action@v2
-    #   with:
-    #     username: ${{ secrets.DOCKERHUB_USERNAME }}
-    #     password: ${{ secrets.DOCKERHUB_TOKEN }}
+    - name: Login to Docker Hub
+      id: docker-login
+      uses: docker/login-action@v2
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-    # - name: Build, tag, and push image to Dockerhub
-    #   id: build-image
-    #   run: |
-    #     docker build -t makerdao/maker-keeper .
-    #     docker push makerdao/maker-keeper
+    - name: Extract commit hash
+      id: vars
+      shell: bash
+      run: |
+        echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
+
+    - name: Build, tag, and push image to Dockerhub
+      id: build-image
+      run: |
+        echo "$REGISTRY/$REPO_NAME:$LATEST_TAG"
+        echo "$REGISTRY/$REPO_NAME:$SHA_TAG"
+        docker build -t $REGISTRY/$REPO_NAME:$SHA_TAG \
+                     -t $REGISTRY/$REPO_NAME:$LATEST_TAG \
+                     .
+        # docker push $REGISTRY/$REPO_NAME --all-tags
