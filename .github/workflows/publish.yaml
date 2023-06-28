@@ -9,10 +9,6 @@ on:
 env:
   SUBMODULE_PATH: lib/pymaker
   SUBMODULE_BRANCH: codecov-upgrade
-  SHA_TAG: ${{ steps.vars.outputs.sha_short }}
-  LATEST_TAG: latest
-  REGISTRY: makerdao
-  REPO_NAME: maker-keeper
 
 jobs:
   deploy:
@@ -66,6 +62,11 @@ jobs:
 
     - name: Build, tag, and push image to Dockerhub
       id: build-image
+      env:
+        SHA_TAG: ${{ steps.vars.outputs.sha_short }}
+        LATEST_TAG: latest
+        REGISTRY: makerdao
+        REPO_NAME: maker-keeper
       run: |
         echo "$REGISTRY/$REPO_NAME:$LATEST_TAG"
         echo "$REGISTRY/$REPO_NAME:$SHA_TAG"
