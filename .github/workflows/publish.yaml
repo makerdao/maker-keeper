@@ -32,12 +32,6 @@ jobs:
       with:
         python-version: '3.6.7'
 
-    - name: check requirements
-      run: |
-        cat $(find lib -name requirements.txt)
-        echo ""
-        cat $(find lib -name requirements-dev.txt)
-
     - name: Run tests
       run: |
         python -m pip install --upgrade pip
