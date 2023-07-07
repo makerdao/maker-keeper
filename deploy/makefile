@@ -8,7 +8,7 @@ TIMEOUT = 5m0s
 .ONESHELL:
 .SHELL := /bin/bash
 
-.PHONY: check dryrun deploy
+.PHONY: check update-repo dryrun deploy
 
 check:
 	@if command -v helm >/dev/null 2>&1; then \
