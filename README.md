@@ -62,4 +62,12 @@ bin/maker-keeper \
     --blocknative-api-key MY-KEY
 ```
 
+## Build helm chart & deploy into kubernetes
 
+```
+# helm deploy dryrun
+cd deploy && make dryrun
+
+# helm deploy
+cd deploy && make deploy
+```

@@ -1,0 +1,64 @@
+replicaCount: 1
+service:
+  name: maker-keeper
+  port: 8080
+  type: ClusterIP
+  containerPort: 80
+  tls:
+    enabled: false
+image:
+  repository: nginx
+  pullPolicy: Always
+  tag: latest
+serviceAccount:
+  create: false
+ingress:
+  enabled: false
+resources:
+  limits:
+    cpu: 1
+    memory: 1024Mi
+  requests:
+    cpu: 250m
+    memory: 512Mi
+autoscaling:
+  enabled: false
+env:
+  SEQUENCER_ADDRESS:
+    type: parameterStore
+    name: sequencer-address
+    parameter_name: /eks/maker-prod/maker-keeper/sequencer-address
+  BLOCKNATIVE_KEY:
+    type: parameterStore
+    name: blocknative
+    parameter_name: /eks/maker-prod/maker-keeper/blocknative
+  ETHFROM:
+    type: parameterStore
+    name: eth-from
+    parameter_name: /eks/maker-prod/maker-keeper/eth-from
+  ETHKEY:
+    type: parameterStore
+    name: eth-private-key
+    parameter_name: /eks/maker-prod/maker-keeper/eth-private-key
+  NETWORK_ID:
+    type: parameterStore
+    name: network-id
+    parameter_name: /eks/maker-prod/maker-keeper/network-id
+  RPCURL:
+    type: parameterStore
+    name: rpc-url
+    parameter_name: /eks/maker-prod/maker-keeper/rpc-url
+externalSecrets:
+  clusterSecretStoreName: maker-prod
+livenessProbe:
+  httpGet:
+    path: /
+    port: 80
+  initialDelaySeconds: 5
+  periodSeconds: 30
+readinessProbe:
+  httpGet:
+    path: /
+    port: 80
+  initialDelaySeconds: 5
+  periodSeconds: 30
