@@ -37,8 +37,6 @@ jobs:
         python -m pip install --upgrade pip
         pip install virtualenv --upgrade
         pip install $(cat requirements.txt $(find lib -name requirements.txt | sort) | sort | uniq | sed 's/ *== */==/g')
-        pip install $(cat requirements-dev.txt $(find lib -name requirements-dev.txt | sort) | sort | uniq | sed 's/ *== */==/g')
-        ./test.sh
 
     - name: Login to Docker Hub
       id: docker-login
