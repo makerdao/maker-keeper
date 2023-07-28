@@ -18,6 +18,7 @@ import requests
 import eth_utils
 import time
 
+
 from web3 import Web3, HTTPProvider
 from pymaker.keys import register_private_key
 from pymaker.lifecycle import Lifecycle
@@ -87,6 +88,9 @@ class MakerKeeper:
         """ Callback called on each new block. If too many errors, terminate the keeper.
         This is the entrypoint to the Keeper's monitoring logic
         """
+        isConnected = self.web3.isConnected()
+        logging.info(f'web3 isConntected is: {isConnected}')
+
         if self.errors >= self.max_errors:
             logging.error("Number of errors reached max configured, exiting keeper")
             self.lifecycle.terminate()
@@ -130,7 +134,6 @@ class MakerKeeper:
                 },
                 timeout=15
             )
-
             if result.ok and result.content:
                 confidence_80_tip = result.json().get('blockPrices')[0]['estimatedPrices'][3]['maxPriorityFeePerGas']
                 logging.info(f"Using Blocknative 80% confidence tip {confidence_80_tip}")
