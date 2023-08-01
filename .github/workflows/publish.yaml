@@ -3,7 +3,7 @@ name: Build, test and push Docker image
 on:
   push:
     branches:
-      - main
+      - TECH-1859
 
 env:
   SUBMODULE_PATH: lib/pymaker
@@ -24,9 +24,6 @@ jobs:
     - name: Switch submodule branch
       run: |
         git submodule update --init --recursive
-        pushd $SUBMODULE_PATH
-        git checkout $SUBMODULE_BRANCH
-        popd
 
     - uses: actions/setup-python@v4
       with:
