@@ -3,7 +3,7 @@ name: Build, test and push Docker image
 on:
   push:
     branches:
-      - TECH-1859
+      - main
 
 env:
   SUBMODULE_PATH: lib/pymaker
