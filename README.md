@@ -1,5 +1,5 @@
-# autoline-keeper
-![Build Status](https://github.com/makerdao/autoline-keeper/actions/workflows/.github/workflows/publish.yaml/badge.svg?branch=main)
+# maker-keeper
+![Build Status](https://github.com/makerdao/maker-keeper/actions/workflows/.github/workflows/publish.yaml/badge.svg?branch=main)
 
 This repository contains a Keeper that on each block mined checks if there's any debt ceiling change opportunity and executes the transaction to update.
 Checking opportunities of debt ceiling change is done by calling the `getNextJob` function of `AutoLineJob` contract (https://etherscan.io/address/0xd3E01B079f0a787Fc2143a43E2Bdd799b2f34d9a).
@@ -10,18 +10,18 @@ This project uses *Python 3.6.6* and requires *virtualenv* to be installed.
 
 In order to clone the project and install required third-party packages please execute:
 ```
-git clone https://github.com/makerdao/autoline-keeper.git
-cd autoline-keeper
+git clone https://github.com/makerdao/maker-keeper.git
+cd maker-keeper
 git submodule update --init --recursive
 ./install.sh
 ```
 
-Can be also installed as a Docker image (makerdao/autoline-keeper)
+Can be also installed as a Docker image (makerdao/maker-keeper)
 
 ## Running
 
 ```
-usage: autoline-keeper [-h] --rpc-url RPC_URL [--rpc-timeout RPC_TIMEOUT]
+usage: maker-keeper [-h] --rpc-url RPC_URL [--rpc-timeout RPC_TIMEOUT]
                        --eth-from ETH_FROM --eth-private-key ETH_PRIVATE_KEY
                        [--autoline-address AUTOLINE_ADDRESS]
                        [--autoline-job-address AUTOLINE_JOB_ADDRESS]
@@ -54,7 +54,7 @@ optional arguments:
 ```
 #!/bin/bash
 
-bin/autoline-keeper \
+bin/maker-keeper \
     --rpc-url https://localhost:8545 \
     --eth-from 0x.... \
     --eth-private-key 5210.... \
