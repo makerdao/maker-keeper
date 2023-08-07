@@ -1,9 +1,9 @@
-FROM python:3.6.6
+FROM python:3.8
 
 RUN groupadd -r maker && useradd --no-log-init -r -g maker maker
 
 COPY bin /opt/maker/maker-keeper/bin
-COPY lib /opt/maker/maker-keeper/lib
+ADD lib /opt/maker/maker-keeper/lib
 COPY maker_keeper /opt/maker/maker-keeper/maker_keeper
 COPY install.sh /opt/maker/maker-keeper/install.sh
 COPY requirements.txt /opt/maker/maker-keeper/requirements.txt
