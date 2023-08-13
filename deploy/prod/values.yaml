@@ -57,7 +57,7 @@ livenessProbe:
     command:
     - /bin/sh
     - -c
-    - exit 0
+    - ps -ef | grep /opt/maker/maker-keeper/bin/run.sh
   initialDelaySeconds: 5
   periodSeconds: 30
 readinessProbe:
@@ -65,6 +65,6 @@ readinessProbe:
     command:
     - /bin/sh
     - -c
-    - exit 0
+    - ps -ef | grep /opt/maker/maker-keeper/bin/run.sh
   initialDelaySeconds: 5
   periodSeconds: 30
