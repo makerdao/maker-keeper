@@ -1,7 +1,7 @@
 APP = maker-keeper
 HELM_CONFIG = ./prod/values.yaml
 CHART = common
-CHART_REPO = https://makerops.github.io/helm-charts
+CHART_REPO = https://techops-services.github.io/helm-charts
 CHART_VER = 0.0.11
 TIMEOUT = 5m0s
 
