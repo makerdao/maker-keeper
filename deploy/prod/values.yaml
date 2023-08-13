@@ -7,9 +7,11 @@ service:
   tls:
     enabled: false
 image:
-  repository: nginx
+  repository: makerdao/maker-keeper
   pullPolicy: Always
   tag: latest
+command: ["sh", "-c"]
+args: ["/opt/maker/maker-keeper/bin/run.sh"]
 serviceAccount:
   create: false
 ingress:
@@ -19,8 +21,8 @@ resources:
     cpu: 1
     memory: 1024Mi
   requests:
-    cpu: 250m
-    memory: 512Mi
+    cpu: 1
+    memory: 1024Mi
 autoscaling:
   enabled: false
 env:
@@ -51,14 +53,18 @@ env:
 externalSecrets:
   clusterSecretStoreName: maker-prod
 livenessProbe:
-  httpGet:
-    path: /
-    port: 80
+  exec:
+    command:
+    - /bin/sh
+    - -c
+    - exit 0
   initialDelaySeconds: 5
   periodSeconds: 30
 readinessProbe:
-  httpGet:
-    path: /
-    port: 80
+  exec:
+    command:
+    - /bin/sh
+    - -c
+    - exit 0
   initialDelaySeconds: 5
   periodSeconds: 30

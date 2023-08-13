@@ -6,7 +6,7 @@ Checking opportunities of debt ceiling change is done by calling the `getNextJob
 
 ## Installation
 
-This project uses *Python 3.6.6* and requires *virtualenv* to be installed.
+This project uses *Python 3.8* and requires *virtualenv* to be installed.
 
 In order to clone the project and install required third-party packages please execute:
 ```
