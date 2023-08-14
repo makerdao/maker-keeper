@@ -21,8 +21,8 @@ resources:
     cpu: 1
     memory: 1024Mi
   requests:
-    cpu: 1
-    memory: 1024Mi
+    cpu: 0.5
+    memory: 256Mi
 autoscaling:
   enabled: false
 env:
