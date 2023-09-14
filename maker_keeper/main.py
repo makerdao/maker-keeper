@@ -96,12 +96,12 @@ class MakerKeeper:
             self.lifecycle.terminate()
         else:
             results = self.sequencer.getNextJobs(self.network_id)
-            for address, success, calldata in results:
-                logging.info(f"Success: {success} | Address: {address} | Calldata: {calldata}")
-                self.execute(success, address, calldata)
+            for address, canWork, calldata in results:
+                logging.info(f"canWork: {canWork} | Address: {address} | Calldata: {calldata}")
+                self.execute(canWork, address, calldata)
 
-    def execute(self, success: bool, address: str, calldata: str):
-        if success:
+    def execute(self, canWork: bool, address: str, calldata: str):
+        if canWork:
             gas_strategy = GeometricGasPrice(
                 web3=self.web3,
                 initial_price=None,
@@ -121,7 +121,7 @@ class MakerKeeper:
                 logging.error("Failed to run exec on IJob!")
 
         else:
-            logging.info("No update available")
+            logging.info(f"No update available. canWork: {canWork}")
 
 
     @staticmethod
