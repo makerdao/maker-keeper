@@ -18,7 +18,7 @@ import requests
 import eth_utils
 import time
 
-
+from io import StringIO
 from web3 import Web3, HTTPProvider
 from pymaker.keys import register_private_key
 from pymaker.lifecycle import Lifecycle
@@ -90,6 +90,8 @@ class MakerKeeper:
         """
         isConnected = self.web3.isConnected()
         logging.info(f'web3 isConntected is: {isConnected}')
+        latestBlock = self.web3.eth.block_number
+        logging.info(f'current block number: {latestBlock}')
 
         if self.errors >= self.max_errors:
             logging.error("Number of errors reached max configured, exiting keeper")
@@ -109,10 +111,33 @@ class MakerKeeper:
                 every_secs=180
             )
             try:
+                # Create StringIO object to capture logs from pymaker class
+                log_capture_string = StringIO()
+
+                # Set up logging
+                ch = logging.StreamHandler(log_capture_string)
+                ch.setLevel(logging.WARNING)  # Adjust this to capture the log levels you want
+                formatter = logging.Formatter('%(levelname)s - %(message)s')
+                ch.setFormatter(formatter)
+
+                # Add custom handler to the logger
+                logging.getLogger().addHandler(ch)
+
+                # execute the job
                 job = IJob(self.web3, Address(address))
-                receipt = job.work(self.network_id, calldata).transact(gas_strategy=gas_strategy) 
+                receipt = job.work(self.network_id, calldata).transact(gas_strategy=gas_strategy)
+
+                # Extract log messages from StringIO object
+                log_contents = log_capture_string.getvalue()
+
                 if receipt is not None and receipt.successful:
                     logging.info("Exec on IJob done!")
+                # do not fail oracle job if it is mined.
+                elif receipt is None and "0xe717Ec34b2707fc8c226b34be5eae8482d06ED03" in log_contents and "mined successfully but generated no single log entry" in log_contents:
+                    logging.info(f"Exec on IJob done with exceptions in job: {address}")
+                # do not fail flapJob when it is not ready to be executed.
+                elif receipt is None and "0xc32506E9bB590971671b649d9B8e18CB6260559F" in log_contents and "execution reverted: Vow/insufficient-surplus" in log_contents:
+                    logging.info(f"IJob, {address}, will not be executed due to 'Vow/insufficient-surplus'.")
                 else:
                     logging.error("Failed to run exec on IJob!")
 
