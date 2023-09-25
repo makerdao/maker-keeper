@@ -132,10 +132,10 @@ class MakerKeeper:
 
                 if receipt is not None and receipt.successful:
                     logging.info("Exec on IJob done!")
-                # do not fail oracle job if it is mined.
+                # Capture the result of an oracleJob transaction and do not throw an error if it is mined.
                 elif receipt is None and "0xe717Ec34b2707fc8c226b34be5eae8482d06ED03" in log_contents and "mined successfully but generated no single log entry" in log_contents:
                     logging.info(f"Exec on IJob done with exceptions in job: {address}")
-                # do not fail flapJob when it is not ready to be executed.
+                # Capture the result of the flapJob transaction and do not throw an error, if the flapJob was not ready to be executed.
                 elif receipt is None and "0xc32506E9bB590971671b649d9B8e18CB6260559F" in log_contents and "execution reverted: Vow/insufficient-surplus" in log_contents:
                     logging.info(f"IJob, {address}, will not be executed due to 'Vow/insufficient-surplus'.")
                 else:
