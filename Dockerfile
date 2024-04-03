@@ -1,4 +1,4 @@
-FROM python:3.8
+FROM python:3.9
 
 RUN groupadd -r maker && useradd --no-log-init -r -g maker maker
 
