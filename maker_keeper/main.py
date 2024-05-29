@@ -14,22 +14,42 @@
 import argparse
 import logging
 import sys
+import os
 import requests
 import eth_utils
 import time
 
 from io import StringIO
 from web3 import Web3, HTTPProvider
+from urllib.parse import urlparse
+
 from pymaker.keys import register_private_key
 from pymaker.lifecycle import Lifecycle
 from pymaker.gas import GeometricGasPrice
+from pymaker.keys import register_keys
 from pymaker import Contract, Address, Transact
 
+class ExitOnCritical(logging.StreamHandler):
+    """Custom class to terminate script execution once
+    log records with severity level ERROR or higher occurred"""
+
+    def emit(self, record):
+        super().emit(record)
+        if record.levelno > logging.ERROR:
+            sys.exit(1)
 
 class MakerKeeper:
     """MakerKeeper."""
 
+    logging.basicConfig(
+        format="%(asctime)s [%(levelname)s] %(name)s - %(message)s",
+        datefmt="%Y-%m-%dT%H:%M:%S%z",
+        force=True,
+        handlers=[ExitOnCritical()],
+    )
     logger = logging.getLogger()
+    log_level = logging.getLevelName(os.environ.get("LOG_LEVEL") or "INFO")
+    logger.setLevel(log_level)
 
     def __init__(self, args: list, **kwargs):
         parser = argparse.ArgumentParser(prog='maker-keeper')
@@ -39,6 +59,18 @@ class MakerKeeper:
 
         parser.add_argument("--rpc-timeout", type=int, default=10,
                             help="JSON-RPC timeout (in seconds, default: 10)")
+
+        parser.add_argument("--primary-eth-rpc-url", type=str, required=True,
+                            help="JSON-RPC host URL")
+
+        parser.add_argument("--primary-eth-rpc-timeout", type=int, default=60,
+                            help="JSON-RPC timeout (in seconds, default: 60)")
+
+        parser.add_argument("--backup-eth-rpc-url", type=str, required=True,
+                            help="JSON-RPC host URL")
+
+        parser.add_argument("--backup-eth-rpc-timeout", type=int, default=60,
+                            help="JSON-RPC timeout (in seconds, default: 60)")
 
         parser.add_argument("--eth-from", type=str, required=True,
                             help="Ethereum account from which to send transactions")
@@ -61,10 +93,9 @@ class MakerKeeper:
 
         self.arguments = parser.parse_args(args)
 
-        self.web3 = kwargs['web3'] if 'web3' in kwargs else Web3(HTTPProvider(endpoint_uri=self.arguments.rpc_url,
-                                                                              request_kwargs={"timeout": self.arguments.rpc_timeout}))
-        self.web3.eth.defaultAccount = self.arguments.eth_from
-        register_private_key(self.web3, self.arguments.eth_private_key)
+        self.web3 = None
+        self.node_type = None
+        self._initialize_blockchain_connection()
 
         self.max_errors = self.arguments.max_errors
         self.errors = 0
@@ -72,6 +103,55 @@ class MakerKeeper:
         self.sequencer = Sequencer(self.web3, Address(self.arguments.sequencer_address))
 
         self.network_id = self.arguments.network_id
+
+
+    def _initialize_blockchain_connection(self):
+        """Initialize connection with Ethereum node."""
+        if not self._connect_to_primary_node():
+            self.logger.info("Switching to backup node.")
+            if not self._connect_to_backup_node():
+                self.logger.critical(
+                    "Error: Couldn't connect to the primary and backup Ethereum nodes."
+                )
+
+    def _connect_to_primary_node(self):
+        """Connect to the primary Ethereum node"""
+        return self._connect_to_node(
+            self.arguments.primary_eth_rpc_url, self.arguments.primary_eth_rpc_timeout, "primary"
+        )
+
+    def _connect_to_backup_node(self):
+        """Connect to the backup Ethereum node"""
+        return self._connect_to_node(
+            self.arguments.backup_eth_rpc_url, self.arguments.backup_eth_rpc_timeout, "backup"
+        )
+
+    def _connect_to_node(self, rpc_url, rpc_timeout, node_type):
+        """Connect to an Ethereum node"""
+        try:
+            _web3 = Web3(HTTPProvider(rpc_url, {"timeout": rpc_timeout}))
+        except (TimeExhausted, Exception) as e:
+            self.logger.error(f"Error connecting to Ethereum node: {e}")
+            return False
+        else:
+            if _web3.isConnected():
+                self.web3 = _web3
+                self.node_type = node_type
+                return self._configure_web3()
+        return False
+
+    def _configure_web3(self):
+        """Configure Web3 connection with private key"""
+        try:
+            self.web3.eth.defaultAccount = self.arguments.eth_from
+            register_private_key(self.web3, self.arguments.eth_private_key)
+        except Exception as e:
+            self.logger.error(f"Error configuring Web3: {e}")
+            return False
+        else:
+            node_hostname = urlparse(self.web3.provider.endpoint_uri).hostname
+            self.logger.info(f"Connected to Ethereum node at {node_hostname}")
+            return True
 
     def main(self):
         """ Initialize the lifecycle and enter into the Keeper Lifecycle controller.
