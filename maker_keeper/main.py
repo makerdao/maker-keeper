@@ -54,9 +54,6 @@ class MakerKeeper:
     def __init__(self, args: list, **kwargs):
         parser = argparse.ArgumentParser(prog='maker-keeper')
 
-        parser.add_argument("--rpc-timeout", type=int, default=10,
-                            help="JSON-RPC timeout (in seconds, default: 10)")
-
         parser.add_argument("--primary-eth-rpc-url", type=str, required=True,
                             help="JSON-RPC host URL")
 
