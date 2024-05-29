@@ -46,10 +46,14 @@ env:
     type: parameterStore
     name: network-id
     parameter_name: /eks/maker-prod/maker-keeper/network-id
-  RPCURL:
+  PRIMARY_RPC_URL:
     type: parameterStore
-    name: rpc-url
-    parameter_name: /eks/maker-prod/maker-keeper/rpc-url
+    name: primary-eth-rpc-url
+    parameter_name: /eks/maker-prod/maker-keeper/primary-eth-rpc-url
+  BACKUP_RPC_URL:
+    type: parameterStore
+    name: backup-eth-rpc-url
+    parameter_name: /eks/maker-prod/maker-keeper/backup-eth-rpc-url
 externalSecrets:
   clusterSecretStoreName: maker-prod
 livenessProbe:
