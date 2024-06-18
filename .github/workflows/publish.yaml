@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-      - TECH-3253-update-maker-keeper-pipeline-to-use-IAM-role
 
 env:
   SUBMODULE_PATH: lib/pymaker
