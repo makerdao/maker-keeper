@@ -14,6 +14,8 @@ command: ["sh", "-c"]
 args: ["/opt/maker/maker-keeper/bin/run.sh"]
 serviceAccount:
   create: false
+podAnnotations:
+  reloader.stakater.com/auto: "true"
 ingress:
   enabled: false
 resources:
@@ -54,21 +56,33 @@ env:
     type: parameterStore
     name: backup-eth-rpc-url
     parameter_name: /eks/maker-prod/maker-keeper/backup-eth-rpc-url
+  PRIMARY_RPC_TIMEOUT:
+    type: kv
+    value: 120
+  BACKUP_RPC_TIMEOUT:
+    type: kv
+    value: 120
+  LOG_LEVEL:
+    type: kv
+    value: INFO
+  MAX_ERRORS:
+    type: kv
+    value: 100
 externalSecrets:
   clusterSecretStoreName: maker-prod
 livenessProbe:
   exec:
     command:
-    - /bin/sh
-    - -c
-    - ps -ef | grep /opt/maker/maker-keeper/bin/run.sh
+      - /bin/sh
+      - -c
+      - ps -ef | grep /opt/maker/maker-keeper/bin/run.sh
   initialDelaySeconds: 5
   periodSeconds: 30
 readinessProbe:
   exec:
     command:
-    - /bin/sh
-    - -c
-    - ps -ef | grep /opt/maker/maker-keeper/bin/run.sh
+      - /bin/sh
+      - -c
+      - ps -ef | grep /opt/maker/maker-keeper/bin/run.sh
   initialDelaySeconds: 5
   periodSeconds: 30
