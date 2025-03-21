@@ -29,6 +29,7 @@ from pymaker.gas import GeometricGasPrice
 from pymaker.keys import register_keys
 from pymaker import Contract, Address, Transact
 
+
 class ExitOnCritical(logging.StreamHandler):
     """Custom class to terminate script execution once
     log records with severity level ERROR or higher occurred"""
@@ -37,6 +38,7 @@ class ExitOnCritical(logging.StreamHandler):
         super().emit(record)
         if record.levelno > logging.ERROR:
             sys.exit(1)
+
 
 class MakerKeeper:
     """MakerKeeper."""
@@ -52,38 +54,68 @@ class MakerKeeper:
     logger.setLevel(log_level)
 
     def __init__(self, args: list, **kwargs):
-        parser = argparse.ArgumentParser(prog='maker-keeper')
+        parser = argparse.ArgumentParser(prog="maker-keeper")
 
-        parser.add_argument("--primary-eth-rpc-url", type=str, required=True,
-                            help="JSON-RPC host URL")
+        parser.add_argument(
+            "--primary-eth-rpc-url", type=str, required=True, help="JSON-RPC host URL"
+        )
 
-        parser.add_argument("--primary-eth-rpc-timeout", type=int, default=60,
-                            help="JSON-RPC timeout (in seconds, default: 60)")
+        parser.add_argument(
+            "--primary-eth-rpc-timeout",
+            type=int,
+            default=60,
+            help="JSON-RPC timeout (in seconds, default: 60)",
+        )
 
-        parser.add_argument("--backup-eth-rpc-url", type=str, required=True,
-                            help="JSON-RPC host URL")
+        parser.add_argument(
+            "--backup-eth-rpc-url", type=str, required=True, help="JSON-RPC host URL"
+        )
 
-        parser.add_argument("--backup-eth-rpc-timeout", type=int, default=60,
-                            help="JSON-RPC timeout (in seconds, default: 60)")
+        parser.add_argument(
+            "--backup-eth-rpc-timeout",
+            type=int,
+            default=60,
+            help="JSON-RPC timeout (in seconds, default: 60)",
+        )
 
-        parser.add_argument("--eth-from", type=str, required=True,
-                            help="Ethereum account from which to send transactions")
+        parser.add_argument(
+            "--eth-from",
+            type=str,
+            required=True,
+            help="Ethereum account from which to send transactions",
+        )
 
-        parser.add_argument("--eth-private-key", type=str, required=True,
-                            help="Ethereum private key(s) to use")
+        parser.add_argument(
+            "--eth-private-key",
+            type=str,
+            required=True,
+            help="Ethereum private key(s) to use",
+        )
 
-        parser.add_argument("--sequencer-address", type=str,
-                            default="0x238b4E35dAed6100C6162fAE4510261f88996EC9",
-                            help="Address of Sequencer contract")
+        parser.add_argument(
+            "--sequencer-address",
+            type=str,
+            default="0x238b4E35dAed6100C6162fAE4510261f88996EC9",
+            help="Address of Sequencer contract",
+        )
 
-        parser.add_argument("--max-errors", type=int, default=100,
-                            help="Maximum number of allowed errors before the keeper terminates (default: 100)")
+        parser.add_argument(
+            "--max-errors",
+            type=int,
+            default=100,
+            help="Maximum number of allowed errors before the keeper terminates (default: 100)",
+        )
 
-        parser.add_argument('--network-id', type=str, required=True,
-                            help="Unique id of network running autoline keepers")
+        parser.add_argument(
+            "--network-id",
+            type=str,
+            required=True,
+            help="Unique id of network running autoline keepers",
+        )
 
-        parser.add_argument('--blocknative-api-key', type=str, required=True,
-                            help="Blocknative key")
+        parser.add_argument(
+            "--blocknative-api-key", type=str, required=True, help="Blocknative key"
+        )
 
         self.arguments = parser.parse_args(args)
 
@@ -98,7 +130,6 @@ class MakerKeeper:
 
         self.network_id = self.arguments.network_id
 
-
     def _initialize_blockchain_connection(self):
         """Initialize connection with Ethereum node."""
         if not self._connect_to_primary_node():
@@ -111,13 +142,17 @@ class MakerKeeper:
     def _connect_to_primary_node(self):
         """Connect to the primary Ethereum node"""
         return self._connect_to_node(
-            self.arguments.primary_eth_rpc_url, self.arguments.primary_eth_rpc_timeout, "primary"
+            self.arguments.primary_eth_rpc_url,
+            self.arguments.primary_eth_rpc_timeout,
+            "primary",
         )
 
     def _connect_to_backup_node(self):
         """Connect to the backup Ethereum node"""
         return self._connect_to_node(
-            self.arguments.backup_eth_rpc_url, self.arguments.backup_eth_rpc_timeout, "backup"
+            self.arguments.backup_eth_rpc_url,
+            self.arguments.backup_eth_rpc_timeout,
+            "backup",
         )
 
     def _connect_to_node(self, rpc_url, rpc_timeout, node_type):
@@ -148,7 +183,7 @@ class MakerKeeper:
             return True
 
     def main(self):
-        """ Initialize the lifecycle and enter into the Keeper Lifecycle controller.
+        """Initialize the lifecycle and enter into the Keeper Lifecycle controller.
         Each function supplied by the lifecycle will accept a callback function that will be executed.
         The lifecycle.on_block() function will enter into an infinite loop, but will gracefully shutdown
         if it recieves a SIGINT/SIGTERM signal.
@@ -159,22 +194,67 @@ class MakerKeeper:
             lifecycle.on_block(self.process_block)
 
     def process_block(self):
-        """ Callback called on each new block. If too many errors, terminate the keeper.
+        """Callback called on each new block. If too many errors, terminate the keeper.
         This is the entrypoint to the Keeper's monitoring logic
         """
         isConnected = self.web3.isConnected()
-        logging.info(f'web3 isConntected is: {isConnected}')
-        latestBlock = self.web3.eth.block_number
-        logging.info(f'current block number: {latestBlock}')
+        logging.info(f"web3 isConntected is: {isConnected}")
+
+        # If not connected, try to reconnect
+        if not isConnected:
+            logging.warning("Web3 connection lost. Attempting to reconnect...")
+            self._initialize_blockchain_connection()
+            if not self.web3.isConnected():
+                self.errors += 1
+                logging.error("Failed to reconnect to Ethereum node")
+                return
+
+        try:
+            latestBlock = self.web3.eth.block_number
+            logging.info(f"current block number: {latestBlock}")
+        except Exception as e:
+            logging.error(f"Error getting block number: {e}")
+            self._initialize_blockchain_connection()
+            self.errors += 1
+            return
 
         if self.errors >= self.max_errors:
             logging.error("Number of errors reached max configured, exiting keeper")
             self.lifecycle.terminate()
         else:
-            results = self.sequencer.getNextJobs(self.network_id)
-            for address, canWork, calldata in results:
-                logging.info(f"canWork: {canWork} | Address: {address} | Calldata: {calldata}")
-                self.execute(canWork, address, calldata)
+            try:
+                results = self.sequencer.getNextJobs(self.network_id)
+                for address, canWork, calldata in results:
+                    logging.info(
+                        f"canWork: {canWork} | Address: {address} | Calldata: {calldata}"
+                    )
+                    self.execute(canWork, address, calldata)
+            except ValueError as e:
+                error_message = str(e)
+                if (
+                    "timeout" in error_message.lower()
+                    or "execution aborted" in error_message.lower()
+                ):
+                    logging.warning(f"Error when calling getNextJobs: {e}")
+                    # Switch nodes if we're getting errors
+                    if self.node_type == "primary":
+                        logging.info("Switching to backup node due to error")
+                        if self._connect_to_backup_node():
+                            logging.info("Successfully switched to backup node")
+                        else:
+                            logging.error("Failed to switch to backup node")
+                    else:
+                        logging.info("Switching to primary node due to error")
+                        if self._connect_to_primary_node():
+                            logging.info("Successfully switched to primary node")
+                        else:
+                            logging.error("Failed to switch to primary node")
+                else:
+                    logging.error(f"Error calling getNextJobs: {e}")
+                self.errors += 1
+            except Exception as e:
+                logging.error(f"Unexpected error in process_block: {e}")
+                self.errors += 1
 
     def execute(self, canWork: bool, address: str, calldata: str):
         if canWork:
@@ -182,7 +262,7 @@ class MakerKeeper:
                 web3=self.web3,
                 initial_price=None,
                 initial_tip=self.get_initial_tip(self.arguments),
-                every_secs=180
+                every_secs=180,
             )
             try:
                 # Create StringIO object to capture logs from pymaker class
@@ -190,8 +270,10 @@ class MakerKeeper:
 
                 # Set up logging
                 ch = logging.StreamHandler(log_capture_string)
-                ch.setLevel(logging.WARNING)  # Adjust this to capture the log levels you want
-                formatter = logging.Formatter('%(levelname)s - %(message)s')
+                ch.setLevel(
+                    logging.WARNING
+                )  # Adjust this to capture the log levels you want
+                formatter = logging.Formatter("%(levelname)s - %(message)s")
                 ch.setFormatter(formatter)
 
                 # Add custom handler to the logger
@@ -199,7 +281,9 @@ class MakerKeeper:
 
                 # execute the job
                 job = IJob(self.web3, Address(address))
-                receipt = job.work(self.network_id, calldata).transact(gas_strategy=gas_strategy)
+                receipt = job.work(self.network_id, calldata).transact(
+                    gas_strategy=gas_strategy
+                )
 
                 # Extract log messages from StringIO object
                 log_contents = log_capture_string.getvalue()
@@ -207,11 +291,22 @@ class MakerKeeper:
                 if receipt is not None and receipt.successful:
                     logging.info("Exec on IJob done!")
                 # Capture the result of an oracleJob transaction and do not throw an error if it is mined.
-                elif receipt is None and "0xe717Ec34b2707fc8c226b34be5eae8482d06ED03" in log_contents and "mined successfully but generated no single log entry" in log_contents:
+                elif (
+                    receipt is None
+                    and "0xe717Ec34b2707fc8c226b34be5eae8482d06ED03" in log_contents
+                    and "mined successfully but generated no single log entry"
+                    in log_contents
+                ):
                     logging.info(f"Exec on IJob done with exceptions in job: {address}")
                 # Capture the result of the flapJob transaction and do not throw an error, if the flapJob was not ready to be executed.
-                elif receipt is None and "0xc32506E9bB590971671b649d9B8e18CB6260559F" in log_contents and "execution reverted: Vow/insufficient-surplus" in log_contents:
-                    logging.info(f"IJob, {address}, will not be executed due to 'Vow/insufficient-surplus'.")
+                elif (
+                    receipt is None
+                    and "0xc32506E9bB590971671b649d9B8e18CB6260559F" in log_contents
+                    and "execution reverted: Vow/insufficient-surplus" in log_contents
+                ):
+                    logging.info(
+                        f"IJob, {address}, will not be executed due to 'Vow/insufficient-surplus'."
+                    )
                 else:
                     logging.error("Failed to run exec on IJob!")
 
@@ -222,20 +317,21 @@ class MakerKeeper:
         else:
             logging.info(f"No update available. canWork: {canWork}")
 
-
     @staticmethod
     def get_initial_tip(arguments) -> int:
         try:
             result = requests.get(
-                url='https://api.blocknative.com/gasprices/blockprices',
-                headers={
-                    'Authorization': arguments.blocknative_api_key
-                },
-                timeout=15
+                url="https://api.blocknative.com/gasprices/blockprices",
+                headers={"Authorization": arguments.blocknative_api_key},
+                timeout=15,
             )
             if result.ok and result.content:
-                confidence_80_tip = result.json().get('blockPrices')[0]['estimatedPrices'][3]['maxPriorityFeePerGas']
-                logging.info(f"Using Blocknative 80% confidence tip {confidence_80_tip}")
+                confidence_80_tip = result.json().get("blockPrices")[0][
+                    "estimatedPrices"
+                ][3]["maxPriorityFeePerGas"]
+                logging.info(
+                    f"Using Blocknative 80% confidence tip {confidence_80_tip}"
+                )
                 return int(confidence_80_tip * GeometricGasPrice.GWEI)
         except Exception as e:
             logging.error(str(e))
@@ -251,11 +347,11 @@ class Sequencer(Contract):
         address: Ethereum address of the `Sequencer` contract.
     """
 
-    abi = Contract._load_abi(__name__, 'abi/Sequencer.abi')
+    abi = Contract._load_abi(__name__, "abi/Sequencer.abi")
 
     def __init__(self, web3: Web3, address: Address):
-        assert (isinstance(web3, Web3))
-        assert (isinstance(address, Address))
+        assert isinstance(web3, Web3)
+        assert isinstance(address, Address)
 
         self.web3 = web3
         self.address = address
@@ -276,24 +372,34 @@ class IJob(Contract):
         address: Ethereum address of the `IJobInterface` contract.
     """
 
-    abi = Contract._load_abi(__name__, 'abi/IJob.abi')
+    abi = Contract._load_abi(__name__, "abi/IJob.abi")
 
     def __init__(self, web3: Web3, address: Address):
-        assert (isinstance(web3, Web3))
-        assert (isinstance(address, Address))
+        assert isinstance(web3, Web3)
+        assert isinstance(address, Address)
 
         self.web3 = web3
         self.address = address
         self._contract = self._get_contract(web3, self.abi, address)
 
     def work(self, network: str, calldata: str) -> Transact:
-        return Transact(self, self.web3, self.abi, self.address, self._contract, "work(bytes32,bytes)", [network, calldata])
+        return Transact(
+            self,
+            self.web3,
+            self.abi,
+            self.address,
+            self._contract,
+            "work(bytes32,bytes)",
+            [network, calldata],
+        )
 
     def __repr__(self):
         return f"IJob('{self.address}')"
 
 
-if __name__ == '__main__':
-    logging.basicConfig(format='%(asctime)-15s %(levelname)-8s %(message)s', level=logging.INFO)
+if __name__ == "__main__":
+    logging.basicConfig(
+        format="%(asctime)-15s %(levelname)-8s %(message)s", level=logging.INFO
+    )
     logging.Formatter.converter = time.gmtime
     MakerKeeper(sys.argv[1:]).main()
